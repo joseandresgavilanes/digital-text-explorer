@@ -1,16 +1,22 @@
 ---
-permalink: "{{ page.fileSlug | slugify }}/index.html"
+permalink: '{{ page.fileSlug | slugify }}/index.html'
 ---
+
 <!doctype html>
-<html lang="en" id="top" data-theme="light" class="bg-neutral-dark scroll-smooth">
+<html
+  lang="en"
+  id="top"
+  data-theme="light"
+  class="bg-neutral-dark scroll-smooth"
+>
   {% include "components/head.html" %}
-  <body class="flex flex-col min-h-screen overflow-x-clip bg-neutral-dark">
+  <body class="bg-neutral-dark flex min-h-screen flex-col overflow-x-clip">
     {% include "components/navbar.html" %}
     <div id="navbar-spacer" class="h-20"></div>
-    <section class="flex-1 bg-neutral-light" id="main-content", tabindex="0">
-    {{ content }}
+    <section class="bg-neutral-light flex-1" id="main-content" tabindex="-1">
+      {{ content }}
     </section>
-    {% include "components/footer.html" %}
-    {% include "components/scripts.html" %}
+    {% include "components/footer.html" %} {% include "components/scripts.html"
+    %}
   </body>
 </html>

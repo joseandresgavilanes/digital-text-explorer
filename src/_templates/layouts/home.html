@@ -1,20 +1,35 @@
 ---
-layout: "base"
+layout: 'base'
 ---
-  {% include "components/headers/home.html" %}
 
-  <div class="container px-5 pb-24 pt-12 mx-auto">
-    <div class="grid xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 gap-6 lg:gap-12">
-      {% for card in cards %}
-      <!-- <div class=""> -->
-        <a href="{{ card.link }}">
-          <div class="transition duration-250 ease-in-out hover:scale-105 w-full">
-            <img class="lg:h-48 h-32 shadow w-full object-cover object-center mb-6 rounded-2xl" src="{{ card.img | default: 'https://dummyimage.com/720x400 '}}" alt="content">
-            <p class="uppercase tracking-widest text-accent-light text-sm font-medium title-font">{{ card.eyebrow }}</p>
-            <h2 class="text-xl sm:text-2xl text-text-dark font-bold my-2 leading-tight">{{ card.label }}</h2>
-          </div>
-        </a>
-      <!-- </div> -->
-      {% endfor %}
-    </div>
+{% include "components/headers/home.html" %}
+
+<div class="container mx-auto px-5 pt-12 pb-24">
+  <div
+    class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12 xl:grid-cols-4"
+  >
+    {% for card in cards %}
+    <!-- <div class=""> -->
+    <a href="{{ card.link }}">
+      <div class="w-full transition duration-250 ease-in-out hover:scale-105">
+        <img
+          class="mb-6 h-32 w-full rounded-2xl object-cover object-center shadow lg:h-48"
+          src="{{ card.img | default: '/static/flowers.jpg' }}"
+          alt=""
+        />
+        <p
+          class="text-accent-light title-font text-sm font-medium tracking-widest uppercase"
+        >
+          {{ card.eyebrow }}
+        </p>
+        <h2
+          class="text-text-dark my-2 text-xl leading-tight font-bold sm:text-2xl"
+        >
+          {{ card.label }}
+        </h2>
+      </div>
+    </a>
+    <!-- </div> -->
+    {% endfor %}
   </div>
+</div>

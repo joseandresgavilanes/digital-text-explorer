@@ -1,12 +1,17 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
 
- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
 
-<div id="map" class="h-[55vh] md:h-[80vh] shadow rounded-2xl"></div>
+<div id="map" class="h-[55vh] rounded-2xl shadow md:h-[80vh]"></div>
 
 <script>
   const initialView = { center: [16.87, -97], zoom: 8 };
@@ -25,6 +30,8 @@
     onAdd: function(map) {
       const btn = L.DomUtil.create('button', 'leaflet-control-reset-view');
       btn.innerHTML = '⟲';
+      btn.setAttribute('aria-label', 'Reset the map to its starting view');
+      btn.setAttribute('title', 'Reset the map to its starting view');
       btn.style.cssText = 'width: 36px; height: 36px; background-color: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; cursor: pointer; font-size: 22px; line-height: 1; display: flex; align-items: center; justify-content: center;';
       btn.addEventListener('click', () => {
         map.setView(initialView.center, initialView.zoom);
@@ -47,14 +54,14 @@
     marker.bindPopup(popupHTML);
     window.townMarkers[town.id] = marker;
     window.townData[town.id] = { lat: coords[1], lng: coords[0], name: town.town_short };
-    
+
     // Update URL when popup opens
     marker.on('popupopen', () => {
       const state = { town: town.id, center: window.map.getCenter(), zoom: window.map.getZoom() };
       const url = `towns?town=${town.id}`;
       window.history.pushState(state, '', url);
     });
-    
+
     marker.on('popupclose', () => {
       const url = `towns`;
       window.history.replaceState(null, '', url);
