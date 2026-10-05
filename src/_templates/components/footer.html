@@ -1,31 +1,117 @@
 <footer class="text-text-light body-font bg-neutral-dark mt-16">
-  <div class="container px-5 py-8 mx-auto flex items-center sm:flex-row flex-col">
-    <a class="flex title-font font-medium items-center md:justify-start justify-center text-text-dark">
+  <div
+    class="container mx-auto flex flex-col items-center px-5 py-8 sm:flex-row"
+  >
+    <a
+      href="/"
+      class="title-font text-text-dark hover:text-accent-light flex items-center justify-center font-medium md:justify-start"
+    >
       <span class="ml-3 text-xl">Ticha</span>
     </a>
-    <p class="text-sm text-text-dark sm:ml-4 sm:pl-4 sm:border-l-2 sm:border-text-light sm:py-2 sm:mt-0 mt-4">© 2025 Ticha — Lorem ipsum citation etc.
+    <p
+      class="text-text-dark sm:border-text-light mt-4 text-sm sm:mt-0 sm:ml-4 sm:border-l-2 sm:py-2 sm:pl-4"
+    >
+      © {{ "now" | date: "%Y" }} The Ticha Project. Document images are
+      published courtesy of the holding archives.
+      <a
+        class="text-accent-light hover:text-accent-dark underline"
+        href="/connect/credits"
+        >Credits, citation, and acknowledgements</a
+      >.
     </p>
-    <span class="inline-flex sm:ml-auto sm:mt-0 mt-4 justify-center sm:justify-start">
-      <a class="text-text-light">
-        <svg fill="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-5 h-5" viewBox="0 0 24 24">
-          <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+    <span
+      class="mt-4 inline-flex justify-center sm:mt-0 sm:ml-auto sm:justify-start"
+    >
+      <a
+        class="text-text-light hover:text-accent-light"
+        href="https://www.facebook.com/TichaProject"
+        target="_blank"
+        rel="noopener"
+        aria-label="Ticha on Facebook"
+      >
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          fill="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
+          ></path>
         </svg>
       </a>
-      <a class="ml-3 text-text-light">
-        <svg fill="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-5 h-5" viewBox="0 0 24 24">
-          <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+      <a
+        class="text-text-light hover:text-accent-light ml-3"
+        href="https://twitter.com/hashtag/TichaProject"
+        target="_blank"
+        rel="noopener"
+        aria-label="The #TichaProject hashtag on Twitter"
+      >
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          fill="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"
+          ></path>
         </svg>
       </a>
-      <a class="ml-3 text-text-light">
-        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="w-5 h-5" viewBox="0 0 24 24">
+      <a
+        class="text-text-light hover:text-accent-light ml-3"
+        href="https://www.instagram.com/tichaproject/"
+        target="_blank"
+        rel="noopener"
+        aria-label="Ticha on Instagram"
+      >
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+        >
           <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
-          <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01"></path>
+          <path
+            d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01"
+          ></path>
         </svg>
       </a>
-      <a class="ml-3 text-text-light">
-        <svg fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="0" class="w-5 h-5" viewBox="0 0 24 24">
-          <path stroke="none" d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path>
-          <circle cx="4" cy="4" r="2" stroke="none"></circle>
+      <a
+        class="text-text-light hover:text-accent-light ml-3"
+        href="https://www.youtube.com/channel/UCs4r8ylZlbM1K6Li0MAxPNw"
+        target="_blank"
+        rel="noopener"
+        aria-label="Ticha on YouTube"
+      >
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z"
+          ></path>
+          <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z"></path>
         </svg>
       </a>
     </span>
