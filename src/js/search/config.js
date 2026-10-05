@@ -1,20 +1,15 @@
-// Load and expose the search configuration embedded in the page or on window.
-
-/*
- * loadConfig()
- * Read `window.searchConfig` or parse the JSON embedded in
- * `<script id="search-config" type="application/json">`.
- */
 export function loadConfig() {
-  let CONFIG = window.searchConfig || null;
-  const configEl = document.getElementById('search-config');
-  if ((!CONFIG || Object.keys(CONFIG).length === 0) && configEl) {
+  let config = window.searchConfig;
+  const configElement = document.getElementById('search-config');
+
+  if ((!config || Object.keys(config).length === 0) && configElement) {
     try {
-      CONFIG = JSON.parse(configEl.textContent || '{}');
-      window.searchConfig = CONFIG;
-    } catch (e) {
-      CONFIG = {};
+      config = JSON.parse(configElement.textContent || '{}');
+      window.searchConfig = config;
+    } catch {
+      config = {};
     }
   }
-  return CONFIG || {};
+
+  return config || {};
 }

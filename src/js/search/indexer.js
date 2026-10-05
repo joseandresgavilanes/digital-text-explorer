@@ -1,52 +1,55 @@
 import { pruneDiacritics } from './utils.js';
 
-/*
- * toDoc(doc)
- * Convert a document object into the canonical shape used by Lunr.
- */
-function toDoc(doc) {
+const DEFAULT_LUNR_FIELDS = [
+  'Slug',
+  'Title',
+  'Town',
+  'Language',
+  'Transcription',
+  'Translation',
+  'Archive',
+  'Document_Type',
+  'Year',
+];
+
+/** Converts an API document into the field names expected by Lunr. */
+function toSearchDocument(document) {
   return {
-    'Slug': doc.slug,
-    'Color': doc.color,
-    'Title': pruneDiacritics(doc.title),
-    'Language': pruneDiacritics(doc.language),
-    'Town': pruneDiacritics(doc.town_short),
-    'Document_Type': pruneDiacritics(doc.document_type) || '',
-    'Transcription': pruneDiacritics(doc.transcription) || '',
-    'Translation': pruneDiacritics(doc.translation) || '',
-    'Archive': pruneDiacritics(doc.archive) || '',
-    'Collection': pruneDiacritics(doc.collection) || '',
-    'Date': pruneDiacritics(doc.date) || '',
-    'Year': doc.year || ''
+    Slug: document.slug,
+    Color: document.color,
+    Title: pruneDiacritics(document.title),
+    Language: pruneDiacritics(document.language),
+    Town: pruneDiacritics(document.town_short),
+    Document_Type: pruneDiacritics(document.document_type),
+    Transcription: pruneDiacritics(document.transcription),
+    Translation: pruneDiacritics(document.translation),
+    Archive: pruneDiacritics(document.archive),
+    Collection: pruneDiacritics(document.collection),
+    Date: pruneDiacritics(document.date),
+    Year: document.year || '',
   };
 }
 
-/*
- * buildIndex(data, CONFIG)
- * Build a Lunr index from the provided data using the fields in CONFIG.
- * Returns { idx, resultsLookupMap }
- */
-export function buildIndex(data, CONFIG) {
-  const resultsLookupMap = data.reduce(function (memo, doc) {
-    memo[doc.slug] = doc;
-    return memo;
+/** Builds the Lunr index and its corresponding API-document lookup. */
+export function buildIndex(data, config) {
+  const resultsLookupMap = data.reduce((lookup, document) => {
+    lookup[document.slug] = document;
+    return lookup;
   }, {});
 
-  let idx = lunr(function () {
-    const refField = CONFIG.refField || 'Slug';
+  const idx = lunr(function () {
+    const refField = config.refField || 'Slug';
     this.ref(refField);
 
-    const fields = CONFIG.lunrFields || ['Slug','Title','Town','Language','Transcription','Translation','Archive','Document_Type','Year'];
-    fields.forEach(function(field) { this.field(field) }.bind(this));
+    const fields = config.lunrFields || DEFAULT_LUNR_FIELDS;
+    fields.forEach((field) => this.field(field));
 
     this.pipeline.remove(lunr.stemmer);
     this.searchPipeline.remove(lunr.stemmer);
     this.pipeline.remove(lunr.stopWordFilter);
     this.searchPipeline.remove(lunr.stopWordFilter);
 
-    data.forEach(function (doc) {
-      this.add(toDoc(doc));
-    }, this);
+    data.forEach((document) => this.add(toSearchDocument(document)));
   });
 
   return { idx, resultsLookupMap };

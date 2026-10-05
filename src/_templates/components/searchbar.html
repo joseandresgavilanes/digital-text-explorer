@@ -9,40 +9,64 @@
 </script>
 
 <!-- Embed searchConfig as JSON to avoid Markdown/html reflow issues -->
-<script id="search-config" type="application/json">{{ config.search | jsonify }}</script>
+<script id="search-config" type="application/json">
+  {{ config.search | jsonify }}
+</script>
 
 <script>
-  window.prefixUrl    = "{{ '/' | url }}";
+  window.prefixUrl = "{{ '/' | url }}";
   window.promisedData = fetchData("{{ '/api/documents.json' | url }}");
 </script>
 
-<div class="w-full mb-12 align-middle">
-  <div class="join relative mt-2 flex justify-between items-center w-full shadow rounded-md bg-[#f8f4ea]">
-
-    <select id="search-limit-select" class="flex-none min-w-[150px] w-fit z-10 px-2 active:border-transparent focus:border-transparent focus:ring-0 focus:outline-none bg-transparent border-none cursor-pointer">
+<div class="mb-12 w-full align-middle">
+  <div
+    class="join relative mt-2 flex w-full items-center justify-between rounded-md bg-[#f8f4ea] shadow"
+  >
+    <select
+      id="search-limit-select"
+      aria-label="Search within"
+      class="z-10 w-fit min-w-[150px] flex-none cursor-pointer border-none bg-transparent px-2 focus:border-transparent focus:ring-0 focus:outline-none active:border-transparent"
+    >
       <option disabled>Search Within</option>
       {%- for field in config.search.searchFields -%}
-        <option>{{ field }}</option>
+      <option>{{ field }}</option>
       {%- endfor -%}
     </select>
 
-    <div class="ml-4 border-r h-10"></div>
+    <div class="ml-4 h-10 border-r"></div>
 
-    <div class="grow ml-2">
+    <div class="ml-2 grow">
       <input
         id="search-input"
-        type="text"
-        class="w-full p-2 transition duration-300 ease focus:outline-none font-mono"
-        placeholder="Search"
+        type="search"
+        aria-label="Search documents"
+        class="ease w-full p-2 font-mono transition duration-300 focus:outline-none"
+        placeholder="Search titles, towns, and transcriptions"
       />
     </div>
 
-    <div class="border-r h-10"></div>
+    <div class="h-10 border-r"></div>
 
-    <button id="search-submit" class="focus:outline-none flex-none cursor-pointer py-1.5 px-2 hover:text-black" type="button">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
-        <path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd"/>
+    <button
+      id="search-submit"
+      aria-label="Search"
+      class="flex-none cursor-pointer px-2 py-1.5 hover:text-black focus:outline-none"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+        class="h-4 w-4"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+          clip-rule="evenodd"
+        />
       </svg>
-    </button> 
-  </div>   
+    </button>
+  </div>
 </div>

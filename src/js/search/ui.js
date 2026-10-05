@@ -1,117 +1,162 @@
 import { pruneDiacritics, toQueryString } from './utils.js';
 import { loadConfig } from './config.js';
 
-/*
- * submitSearchQuery(idx, resultsLookupMap, state)
- * Run a search against `idx` using the current `state` (search input, selected field,
- * selected facets/ranges) and return the raw Lunr results array.
- */
+function getFacetProperty(config, facetKey) {
+  return (
+    config.facetKeyToProperty?.[facetKey] ||
+    facetKey.toLowerCase().replaceAll(' ', '_')
+  );
+}
+
+function hasValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === false ||
+    value === 0 ||
+    value === '0' ||
+    value === 'false'
+  ) {
+    return false;
+  }
+
+  return Array.isArray(value)
+    ? value.length > 0
+    : String(value).trim().length > 0;
+}
+
+function matchesYearFacet(selectedValue, year) {
+  if (!selectedValue.includes('*')) {
+    return selectedValue === year;
+  }
+
+  return new RegExp(`^${selectedValue.replaceAll('*', '\\d')}$`).test(year);
+}
+
+/** Runs the full-text query and applies the active facets and ranges. */
 export function submitSearchQuery(idx, resultsLookupMap, state) {
-  const CONFIG = loadConfig();
+  const config = loadConfig();
   let query = '* *';
+
   if (state.searchInput && state.searchInput.value) {
     const input = pruneDiacritics(state.searchInput.value);
     const tokens = input.split(' ').filter(Boolean);
 
-    if (state.selectedSearchField && state.selectedSearchField !== (CONFIG.defaultSearchField || 'All Fields')) {
-      const lunrFieldName = (CONFIG.lunrFieldMap && CONFIG.lunrFieldMap[state.selectedSearchField]) || state.selectedSearchField;
-      query = tokens.map((token) => `${lunrFieldName}:${token}^100 +${lunrFieldName}:${token}*^10 ${lunrFieldName}:${token}~2`).join(' ');
+    if (
+      state.selectedSearchField &&
+      state.selectedSearchField !== (config.defaultSearchField || 'All Fields')
+    ) {
+      const fieldName =
+        config.lunrFieldMap?.[state.selectedSearchField] ||
+        state.selectedSearchField;
+      query = tokens
+        .map(
+          (token) =>
+            `${fieldName}:${token}^100 +${fieldName}:${token}*^10 ${fieldName}:${token}~2`,
+        )
+        .join(' ');
     } else {
       query = toQueryString(tokens);
     }
   }
 
-  let results = idx.search(query) || [];
+  const facetDefinitions = config.facets || [];
+  const activeFacets = Object.entries(state.selectedFacets).filter(
+    ([, values]) => values.length > 0,
+  );
+  const activeRanges = Object.entries(state.selectedRanges).filter(
+    ([, range]) => range.min !== '' || range.max !== '',
+  );
 
-  const facetDefinitions = CONFIG.facets || [];
-  const activeFacets = Object.entries(state.selectedFacets).filter(([_, values]) => values.length > 0);
-  const activeRanges = Object.entries(state.selectedRanges).filter(([_key, range]) => range.min !== '' || range.max !== '');
+  return idx.search(query).filter((result) => {
+    const item = resultsLookupMap[result.ref];
+    if (!item) {
+      return false;
+    }
 
-  const truthyField = (value) => {
-    if (value === true || value === 'true' || value === 1 || value === '1') return true;
-    if (value === false || value === 'false' || value === 0 || value === '0' || value == null) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
-  };
+    const facetMatch = activeFacets.every(([facetKey, selectedValues]) => {
+      const facetDefinition = facetDefinitions.find(
+        (facet) => facet.key === facetKey,
+      );
+      if (facetDefinition?.type === 'booleanlist') {
+        return selectedValues.every((selectedValue) =>
+          hasValue(item[selectedValue]),
+        );
+      }
 
-  if (activeFacets.length > 0 || activeRanges.length > 0) {
-    results = results.filter((res) => {
-      const item = resultsLookupMap[res.ref];
+      const propertyName = getFacetProperty(config, facetKey);
+      const itemValue = pruneDiacritics(item[propertyName]);
+      if (!itemValue) {
+        return false;
+      }
 
-      const facetMatch = activeFacets.every(([facetKey, selectedValues]) => {
-        const facetDef = facetDefinitions.find((facet) => facet.key === facetKey);
-        if (facetDef?.type === 'booleanlist') {
-          return selectedValues.every((selected) => truthyField(item[selected]));
-        }
+      if (propertyName === 'year') {
+        return selectedValues.some((selectedValue) =>
+          matchesYearFacet(selectedValue, itemValue),
+        );
+      }
 
-        const propMap = CONFIG.facetKeyToProperty || {};
-        const propName = propMap[facetKey] || facetKey.toLowerCase().replaceAll(' ', '_');
-        const itemValue = pruneDiacritics(item[propName] || '');
-        if (!itemValue) return false;
-
-        if (propName === 'year') {
-          return selectedValues.some(selected => {
-            if (selected.includes('*')) {
-              const pattern = selected.replaceAll('*', '\\d');
-              return new RegExp(`^${pattern}$`).test(itemValue);
-            }
-            return selected === itemValue;
-          });
-        }
-
-        return selectedValues.some(selected => selected === itemValue);
-      });
-
-      const rangeMatch = activeRanges.every(([facetKey, range]) => {
-        const propMap = CONFIG.facetKeyToProperty || {};
-        const propName = propMap[facetKey] || facetKey.toLowerCase().replaceAll(' ', '_');
-        if (propName !== 'year') return true;
-
-        const itemYear = Number(item[propName]);
-        if (Number.isNaN(itemYear)) return false;
-
-        const min = range.min !== '' ? Number(range.min) : -Infinity;
-        const max = range.max !== '' ? Number(range.max) : Infinity;
-        return itemYear >= min && itemYear <= max;
-      });
-
-      return facetMatch && rangeMatch;
+      return selectedValues.includes(itemValue);
     });
-  }
 
-  return results;
+    const rangeMatch = activeRanges.every(([facetKey, range]) => {
+      const propertyName = getFacetProperty(config, facetKey);
+      if (propertyName !== 'year') {
+        return true;
+      }
+
+      const itemYear = Number(item[propertyName]);
+      if (Number.isNaN(itemYear)) {
+        return false;
+      }
+
+      const minimum = range.min !== '' ? Number(range.min) : -Infinity;
+      const maximum = range.max !== '' ? Number(range.max) : Infinity;
+      return itemYear >= minimum && itemYear <= maximum;
+    });
+
+    return facetMatch && rangeMatch;
+  });
 }
 
-/*
- * initUI({idx, resultsLookupMap})
- * Wire up DOM elements, event handlers, and state. Returns an object with
- * methods to interact with the UI if needed.
- */
+/** Wires the search UI, including facets, query state, and URL synchronization. */
 export async function initUI({ idx, resultsLookupMap, documents }) {
-  const CONFIG = loadConfig();
-  const resultsContainer  = document.getElementById('results');
-  const resultsInfo       = document.getElementById('results-info');
+  const config = loadConfig();
+  const resultsContainer = document.getElementById('results');
+  const resultsInfo = document.getElementById('results-info');
   const activeFacetsContainer = document.getElementById('active-facets');
-  const searchInput       = document.getElementById('search-input');
+  const searchInput = document.getElementById('search-input');
   const searchLimitSelect = document.getElementById('search-limit-select');
-  const searchSubmit      = document.getElementById('search-submit');
-  const facetPanels       = document.getElementById('facet-panels');
-  const apiBase           = `${window.prefixUrl}api/`;
+  const searchSubmit = document.getElementById('search-submit');
+  const facetPanels = document.getElementById('facet-panels');
+  const apiBase = `${window.prefixUrl}api/`;
+
+  if (
+    !resultsContainer ||
+    !resultsInfo ||
+    !activeFacetsContainer ||
+    !searchInput
+  ) {
+    throw new Error(
+      'The search page is missing one or more required UI elements.',
+    );
+  }
 
   const state = {
     selectedFacets: {},
     selectedRanges: {},
-    selectedSearchField: CONFIG.defaultSearchField || 'All Fields',
-    searchInput
+    selectedSearchField: config.defaultSearchField || 'All Fields',
+    searchInput,
   };
 
-  const isNonEmpty = (value) => value !== undefined && value !== null && String(value).trim() !== '';
+  const isNonEmpty = (value) =>
+    value !== undefined && value !== null && String(value).trim() !== '';
   const uniqueOrdered = (values) => [...new Set(values.filter(isNonEmpty))];
 
   const facetValues = {
-    'Language': ['Zapotec', 'Spanish', 'Spanish with some Zapotec'],
+    Language: ['Zapotec', 'Spanish', 'Spanish with some Zapotec'],
     'Document Type': [],
-    'Archive': []
+    Archive: [],
   };
 
   const yearNumbers = documents
@@ -122,9 +167,14 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
     : { min: '', max: '' };
 
   async function loadApiFacetValues() {
+    const loadFacetValues = (filename) =>
+      fetch(`${apiBase}${filename}`)
+        .then((response) => (response.ok ? response.json() : []))
+        .catch(() => []);
+
     const [archives, documentTypes] = await Promise.all([
-      fetch(`${apiBase}archives.json`).then((res) => res.ok ? res.json() : []).catch(() => []),
-      fetch(`${apiBase}document_types.json`).then((res) => res.ok ? res.json() : []).catch(() => [])
+      loadFacetValues('archives.json'),
+      loadFacetValues('document_types.json'),
     ]);
 
     facetValues.Archive = uniqueOrdered(archives);
@@ -134,13 +184,15 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
   function createCheckboxOption(facetKey, value) {
     const listItem = document.createElement('li');
     const label = document.createElement('label');
-    label.className = 'flex items-center cursor-pointer rounded px-2 py-1 transition-colors';
+    label.className =
+      'flex items-center cursor-pointer rounded px-2 py-1 transition-colors';
 
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.dataset.facet = facetKey;
     input.dataset.value = value;
-    input.className = 'w-4 h-4 rounded accent-accent-alt-dark border-text-light text-accent-light focus:ring-text-light focus:ring cursor-pointer';
+    input.className =
+      'w-4 h-4 rounded accent-accent-alt-dark border-text-light text-accent-light focus:ring-text-light focus:ring cursor-pointer';
 
     const text = document.createElement('span');
     text.className = 'ml-2 text-text-dark hover:text-accent-light';
@@ -154,7 +206,8 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
 
   function createRangeInputs(facetKey, min, max) {
     const wrapper = document.createElement('div');
-    wrapper.className = 'pl-2 flex flex-row w-full gap-2 items-center justify-start';
+    wrapper.className =
+      'pl-2 flex flex-row w-full gap-2 items-center justify-start';
 
     const minInput = document.createElement('input');
     minInput.type = 'number';
@@ -163,7 +216,8 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
     minInput.placeholder = min;
     minInput.min = min;
     minInput.max = max;
-    minInput.className = 'border rounded-md px-2 focus-visible:ring focus-visible:ring-text-light max-w-24';
+    minInput.className =
+      'border rounded-md px-2 focus-visible:ring focus-visible:ring-text-light max-w-24';
 
     const maxInput = document.createElement('input');
     maxInput.type = 'number';
@@ -172,7 +226,8 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
     maxInput.placeholder = max;
     maxInput.min = min;
     maxInput.max = max;
-    maxInput.className = 'border rounded-md px-2 focus:ring focus:ring-text-light max-w-24';
+    maxInput.className =
+      'border rounded-md px-2 focus:ring focus:ring-text-light max-w-24';
 
     const separator = document.createElement('span');
     separator.className = 'text-center';
@@ -183,12 +238,16 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
   }
 
   function renderFacetPanels() {
-    if (!facetPanels) return;
-    facetPanels.innerHTML = '';
+    if (!facetPanels) {
+      return;
+    }
 
-    (CONFIG.facets || []).forEach((facet) => {
+    facetPanels.replaceChildren();
+
+    (config.facets || []).forEach((facet) => {
       const listItem = document.createElement('li');
-      listItem.className = 'p-4 bg-[#f8f4ea] shadow rounded-md tracking-tight mb-6';
+      listItem.className =
+        'p-4 bg-[#f8f4ea] shadow rounded-md tracking-tight mb-6';
 
       const heading = document.createElement('div');
       heading.className = `text-xl font-bold my-3 px-2 ${facet.wip ? 'text-accent-light' : ''}`;
@@ -198,92 +257,183 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
       if (facet.type === 'multiselect') {
         const values = facetValues[facet.key] || [];
         const valuesList = document.createElement('ul');
-        values.forEach((value) => valuesList.appendChild(createCheckboxOption(facet.key, value)));
+        values.forEach((value) =>
+          valuesList.appendChild(createCheckboxOption(facet.key, value)),
+        );
         listItem.appendChild(valuesList);
       }
 
       if (facet.type === 'booleanlist') {
         const valuesList = document.createElement('ul');
         facet.list.forEach((value) => {
-          valuesList.appendChild(createCheckboxOption(facet.key, value.key));
-          valuesList.lastChild.querySelector('span').textContent = value.label;
+          const checkboxOption = createCheckboxOption(facet.key, value.key);
+          checkboxOption.querySelector('span').textContent = value.label;
+          valuesList.appendChild(checkboxOption);
         });
         listItem.appendChild(valuesList);
       }
 
       if (facet.type === 'numrange') {
-        listItem.appendChild(createRangeInputs(facet.key, yearRange.min, yearRange.max));
+        listItem.appendChild(
+          createRangeInputs(facet.key, yearRange.min, yearRange.max),
+        );
       }
 
       facetPanels.appendChild(listItem);
     });
   }
 
+  function createEmptyState() {
+    const message = document.createElement('p');
+    message.className = 'col-span-full max-w-[60ch] text-text-light';
+    message.append(
+      'No documents match this search. Try a shorter word, remove one of the filters above, or ',
+    );
+
+    const resetLink = document.createElement('a');
+    resetLink.className = 'text-accent-light hover:text-accent-dark underline';
+    resetLink.href = `${window.prefixUrl}explore/documents`;
+    resetLink.textContent = 'start again with the whole collection';
+    message.append(resetLink, '.');
+
+    return message;
+  }
+
+  function createResultTitle(item) {
+    const title = document.createElement('h2');
+    title.className =
+      'text-text-dark title-font text-lg font-bold leading-tight';
+
+    if (item.title.startsWith('Translation')) {
+      const [firstWord, ...rest] = item.title.split(' ');
+      const prefix = document.createElement('span');
+      prefix.className = 'underline group-hover:text-accent-light';
+      prefix.textContent = firstWord;
+      title.append(prefix, ` ${rest.join(' ')}`);
+    } else if (item.digital_edition) {
+      const prefix = document.createElement('span');
+      prefix.className = 'underline group-hover:text-accent-light';
+      prefix.textContent = 'Digital Edition';
+      title.append(prefix, ` ${item.title}`);
+    } else {
+      title.textContent = item.title;
+    }
+
+    return title;
+  }
+
+  function createSearchResult(item) {
+    const result = document.createElement('div');
+    result.className =
+      'w-full group transition duration-350 ease-in-out hover:scale-110';
+
+    const link = document.createElement('a');
+    link.href = `${window.prefixUrl}document/${item.slug}.html`;
+
+    const thumbnail = document.createElement('div');
+    thumbnail.className =
+      'relative h-36 w-full rounded-tl-[3rem] rounded-br-[3rem] overflow-hidden bg-cover bg-center';
+    thumbnail.style.backgroundImage = `url('${window.prefixUrl}static/thumbnails/${item.slug}.jpg')`;
+
+    const languageBadge = document.createElement('div');
+    languageBadge.className = item.language?.startsWith('Zapotec')
+      ? 'absolute top-0 right-0 bg-red-950 text-[#f7efdc] text-lg font-bold px-2 py-1 rounded-bl-lg z-10'
+      : 'absolute top-0 right-0 bg-accent-dark text-[#f7efdc] text-lg font-bold px-2 py-1 rounded-bl-lg z-10';
+    languageBadge.textContent = item.language?.startsWith('Zapotec')
+      ? 'Zapotec'
+      : 'Spanish';
+    thumbnail.appendChild(languageBadge);
+
+    if (item.digital_edition) {
+      const editionBadge = document.createElement('div');
+      editionBadge.className =
+        'absolute bottom-0 left-0 bg-[url(../static/flower.png)] bg-cover bg-center h-10 w-10 px-2 py-1 rounded-tr-lg z-10';
+      thumbnail.appendChild(editionBadge);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className =
+      'absolute top-0 left-0 w-full h-full block transition-opacity saturate-50 opacity-80 duration-350 ease-in-out group-hover:opacity-0';
+    overlay.style.backgroundColor = `#${item.color}`;
+    thumbnail.appendChild(overlay);
+
+    const details = document.createElement('div');
+    details.className = 'mt-4';
+    details.appendChild(createResultTitle(item));
+    link.append(thumbnail, details);
+    result.appendChild(link);
+
+    return result;
+  }
+
   function appendSearchResults(results) {
-    resultsContainer.innerHTML = null;
-    results.forEach(function (res) {
-      let item = resultsLookupMap[res.ref];
-      let resultDiv = document.createElement('div');
-      let hexColor = `${item.color}`;
-      resultDiv.classList.add('w-full', 'group', 'transition', 'duration-350', 'ease-in-out', 'hover:scale-110');
-      resultDiv.innerHTML = `
-        <a href="${prefixUrl}document/${ item.slug }.html">          
-          <div class="relative h-36 w-full rounded-tl-[3rem] rounded-br-[3rem] overflow-hidden bg-cover bg-center" style="background-image: url('${prefixUrl}static/thumbnails/${item.slug}.jpg');">
-            ${ item.language && item.language.startsWith('Zapotec') ? 
-              `<div class="absolute top-0 right-0 bg-red-950 text-[#f7efdc] text-lg font-bold px-2 py-1 rounded-bl-lg z-10">Zapotec</div>` 
-            : 
-            `<div class="absolute top-0 right-0 bg-accent-dark text-[#f7efdc] text-lg font-bold px-2 py-1 rounded-bl-lg z-10">Spanish</div>` 
-            }
-            ${ item.digital_edition ? `<div class="absolute bottom-0 left-0 bg-[url(../static/flower.png)] bg-cover bg-center h-10 w-10 px-2 py-1 rounded-tr-lg z-10"></div>` : '' }
-            <div class="absolute top-0 left-0 w-full h-full block transition-opacity saturate-50 opacity-80 duration-350 ease-in-out group-hover:opacity-0" style="background-color: #${hexColor};"></div>
-          </div>
-          <div class="mt-4">
-          ${ item.title.startsWith('Translation') ?
-            `<h2 class="text-text-dark title-font text-lg font-bold leading-tight"><span class="underline group-hover:text-accent-light">${item.title.split(' ')[0]}</span> ${item.title.split(' ').slice(1).join(' ')}</h2>`
-            :
-            item.digital_edition ?
-            `<h2 class="text-text-dark title-font text-lg font-bold leading-tight"><span class="underline group-hover:text-accent-light">Digital Edition</span> ${item.title}</h2>`
-            :
-            `<h2 class="text-text-dark title-font text-lg font-bold leading-tight">${item.title}</h2>`
-          }
-          </div>
-        </a>`;
-      resultsContainer.appendChild(resultDiv);
+    resultsContainer.replaceChildren();
+
+    if (results.length === 0) {
+      resultsContainer.appendChild(createEmptyState());
+      return;
+    }
+
+    results.forEach((result) => {
+      resultsContainer.appendChild(
+        createSearchResult(resultsLookupMap[result.ref]),
+      );
     });
   }
 
   function appendSearchInfo(resultsLength, fullIndexLength) {
-    resultsInfo.innerHTML = null;
-    let infoDiv = document.createElement('div');
-    infoDiv.innerHTML = `Showing ${resultsLength} of ${fullIndexLength} results`;
+    resultsInfo.replaceChildren();
+    const noun = fullIndexLength === 1 ? 'document' : 'documents';
+    const infoDiv = document.createElement('div');
+    infoDiv.textContent =
+      resultsLength === fullIndexLength
+        ? `Showing all ${fullIndexLength} ${noun}`
+        : `Showing ${resultsLength} of ${fullIndexLength} ${noun}`;
     resultsInfo.appendChild(infoDiv);
   }
 
+  function createRemovableTag(label, onRemove) {
+    const tag = document.createElement('div');
+    tag.className =
+      'inline-flex items-center gap-2 rounded-full bg-accent-alt-light px-3 py-1 text-xs text-accent-alt-dark hover:shadow';
+
+    const button = document.createElement('button');
+    button.className = 'cursor-pointer hover:text-accent-light';
+    button.type = 'button';
+
+    const text = document.createElement('span');
+    text.className = 'font-mono';
+    text.textContent = label;
+
+    const close = document.createElement('span');
+    close.className = 'ml-1 font-bold';
+    close.textContent = ' × ';
+
+    button.append(text, close);
+    button.addEventListener('click', onRemove);
+    tag.appendChild(button);
+    return tag;
+  }
+
   function renderActiveFacets() {
-    activeFacetsContainer.innerHTML = null;
+    activeFacetsContainer.replaceChildren();
 
-    if (searchInput && searchInput.value) {
-      const queryTag = document.createElement('div');
-      queryTag.className = 'inline-flex items-center gap-2 bg-accent-alt-light text-accent-alt-dark px-3 py-1 rounded-full text-xs';
-      queryTag.innerHTML = `
-      <button class="hover:text-accent-light cursor-pointer" data-query-tag="true">
-        <span class="font-mono"><b>Search (${state.selectedSearchField}):</b> ${searchInput.value}</span>
-        <span class="ml-1 font-bold"> × </span>
-      </button>
-      `;
-
-      const removeQueryBtn = queryTag.querySelector('button');
-      removeQueryBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        searchInput.value = '';
-        handleSearchBehavior();
-      });
-
+    if (searchInput.value) {
+      const queryTag = createRemovableTag(
+        `Search (${state.selectedSearchField}): ${searchInput.value}`,
+        (event) => {
+          event.preventDefault();
+          searchInput.value = '';
+          handleSearchBehavior();
+        },
+      );
       activeFacetsContainer.appendChild(queryTag);
     }
 
     const getFacetLabel = (facetKey, valueKey) => {
-      const facetDef = (CONFIG.facets || []).find((facet) => facet.key === facetKey);
+      const facetDef = (config.facets || []).find(
+        (facet) => facet.key === facetKey,
+      );
       if (!facetDef || facetDef.type !== 'booleanlist') return valueKey;
       const listItem = facetDef.list.find((item) => item.key === valueKey);
       return listItem?.label || valueKey;
@@ -292,58 +442,56 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
     Object.entries(state.selectedFacets).forEach(([facetKey, values]) => {
       values.forEach((value) => {
         const displayValue = getFacetLabel(facetKey, value);
-        const tag = document.createElement('div');
-        tag.className = 'inline-flex items-center gap-2 bg-accent-alt-light text-accent-alt-dark px-3 py-1 rounded-full text-xs hover:shadow ';
-        tag.innerHTML = `
-        <button class="hover:text-accent-light cursor-pointer" data-facet="${facetKey}" data-value="${value}">
-          <span class="font-mono"><b>${facetKey}:</b> ${displayValue}</span>
-          <span class="ml-1 font-bold"> × </span>
-        </button>
-        `;
+        const tag = createRemovableTag(
+          `${facetKey}: ${displayValue}`,
+          (event) => {
+            event.preventDefault();
+            state.selectedFacets[facetKey] = state.selectedFacets[
+              facetKey
+            ].filter((selectedValue) => selectedValue !== value);
 
-        const removeBtn = tag.querySelector('button');
-        removeBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          const facetKeyToRemove = this.getAttribute('data-facet');
-          const valueToRemove = this.getAttribute('data-value');
+            const checkboxes = document.querySelectorAll(
+              'input[type="checkbox"][data-facet][data-value]',
+            );
+            checkboxes.forEach((checkbox) => {
+              if (
+                checkbox.dataset.facet === facetKey &&
+                pruneDiacritics(checkbox.dataset.value) === value
+              ) {
+                checkbox.checked = false;
+              }
+            });
 
-          state.selectedFacets[facetKeyToRemove] = state.selectedFacets[facetKeyToRemove].filter(v => v !== valueToRemove);
-
-          const checkboxes = document.querySelectorAll(`input[type="checkbox"][data-facet="${facetKeyToRemove}"][data-value]`);
-          checkboxes.forEach((checkbox) => {
-            if (pruneDiacritics(checkbox.getAttribute('data-value')) === valueToRemove) {
-              checkbox.checked = false;
-            }
-          });
-
-          handleSearchBehavior();
-        });
+            handleSearchBehavior();
+          },
+        );
 
         activeFacetsContainer.appendChild(tag);
       });
     });
 
     Object.entries(state.selectedRanges).forEach(([facetKey, range]) => {
-      if (!range.min && !range.max) return;
+      if (!range.min && !range.max) {
+        return;
+      }
 
-      const rangeValue = range.min && range.max ? `${range.min}–${range.max}` : range.min ? `≥${range.min}` : `≤${range.max}` ;
-      const tag = document.createElement('div');
-      tag.className = 'inline-flex items-center gap-2 bg-accent-alt-light text-accent-alt-dark px-3 py-1 rounded-full text-xs hover:shadow ';
-      tag.innerHTML = `
-        <button class="hover:text-accent-light cursor-pointer" data-range-facet="${facetKey}">
-          <span class="font-mono"><b>${facetKey}:</b> ${rangeValue}</span>
-          <span class="ml-1 font-bold"> × </span>
-        </button>
-      `;
+      const rangeValue =
+        range.min && range.max
+          ? `${range.min}–${range.max}`
+          : range.min
+            ? `≥${range.min}`
+            : `≤${range.max}`;
+      const tag = createRemovableTag(`${facetKey}: ${rangeValue}`, (event) => {
+        event.preventDefault();
+        state.selectedRanges[facetKey] = { min: '', max: '' };
 
-      const removeBtn = tag.querySelector('button');
-      removeBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const facetKeyToRemove = this.getAttribute('data-range-facet');
-        state.selectedRanges[facetKeyToRemove] = {min: '', max: ''};
-
-        const rangeInputs = document.querySelectorAll(`input[data-facet="${facetKeyToRemove}"][data-range]`);
-        rangeInputs.forEach((input) => { input.value = ''; });
+        document
+          .querySelectorAll('input[data-facet][data-range]')
+          .forEach((input) => {
+            if (input.dataset.facet === facetKey) {
+              input.value = '';
+            }
+          });
 
         handleSearchBehavior();
       });
@@ -356,9 +504,11 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
     const newUrlParams = new URLSearchParams();
     if (searchInput.value) newUrlParams.set('query', searchInput.value);
 
-    const booleanlistFacetKeys = new Set((CONFIG.facets || [])
-      .filter((facet) => facet.type === 'booleanlist')
-      .map((facet) => facet.key));
+    const booleanlistFacetKeys = new Set(
+      (config.facets || [])
+        .filter((facet) => facet.type === 'booleanlist')
+        .map((facet) => facet.key),
+    );
 
     Object.entries(state.selectedFacets).forEach(([facetKey, values]) => {
       if (!values.length) return;
@@ -372,19 +522,26 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
     });
 
     Object.entries(state.selectedRanges).forEach(([facetKey, range]) => {
-      if (range.min) newUrlParams.set(`${facetKey.toLowerCase()}-min`, range.min);
-      if (range.max) newUrlParams.set(`${facetKey.toLowerCase()}-max`, range.max);
+      if (range.min)
+        newUrlParams.set(`${facetKey.toLowerCase()}-min`, range.min);
+      if (range.max)
+        newUrlParams.set(`${facetKey.toLowerCase()}-max`, range.max);
     });
 
-    const newUrl = `${window.location.pathname}?${newUrlParams.toString()}`;
+    const queryString = newUrlParams.toString();
+    const newUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
     window.history.replaceState({}, '', newUrl);
   }
 
   function inferUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('query')) searchInput.value = urlParams.get('query');
+    if (urlParams.has('query')) {
+      searchInput.value = urlParams.get('query');
+    }
 
-    const booleanlistValueMap = (CONFIG.facets || [])
+    const booleanlistValueMap = (config.facets || [])
       .filter((facet) => facet.type === 'booleanlist')
       .reduce((map, facet) => {
         facet.list.forEach((item) => {
@@ -399,10 +556,13 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
       const normalizedKey = key.toLowerCase();
       if (normalizedKey.endsWith('-min') || normalizedKey.endsWith('-max')) {
         const facetKey = key.slice(0, key.lastIndexOf('-'));
-        const normalizedFacetKey = facetKey.charAt(0).toUpperCase() + facetKey.slice(1);
+        const normalizedFacetKey =
+          facetKey.charAt(0).toUpperCase() + facetKey.slice(1);
         const bound = normalizedKey.endsWith('-min') ? 'min' : 'max';
 
-        if (!state.selectedRanges[normalizedFacetKey]) state.selectedRanges[normalizedFacetKey] = {min: '', max: ''};
+        if (!state.selectedRanges[normalizedFacetKey]) {
+          state.selectedRanges[normalizedFacetKey] = { min: '', max: '' };
+        }
         state.selectedRanges[normalizedFacetKey][bound] = value;
         return;
       }
@@ -411,7 +571,9 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
         const facetKey = booleanlistValueMap[key];
         const featureValue = key;
         if (value === 'true' || value === '') {
-          if (!state.selectedFacets[facetKey]) state.selectedFacets[facetKey] = [];
+          if (!state.selectedFacets[facetKey]) {
+            state.selectedFacets[facetKey] = [];
+          }
           state.selectedFacets[facetKey].push(featureValue);
         }
         return;
@@ -430,20 +592,31 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
   }
 
   function setupFacetCheckboxes() {
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-facet][data-value]');
+    const checkboxes = document.querySelectorAll(
+      'input[type="checkbox"][data-facet][data-value]',
+    );
     checkboxes.forEach((checkbox) => {
       const facetKey = checkbox.getAttribute('data-facet');
       const facetValue = checkbox.getAttribute('data-value');
       const prunedFacetValue = pruneDiacritics(facetValue);
 
-      if (state.selectedFacets[facetKey] && state.selectedFacets[facetKey].includes(prunedFacetValue)) checkbox.checked = true;
+      if (state.selectedFacets[facetKey]?.includes(prunedFacetValue)) {
+        checkbox.checked = true;
+      }
 
-      checkbox.addEventListener('change', function() {
-        if (!state.selectedFacets[facetKey]) state.selectedFacets[facetKey] = [];
-        if (this.checked) {
-          if (!state.selectedFacets[facetKey].includes(prunedFacetValue)) state.selectedFacets[facetKey].push(prunedFacetValue);
+      checkbox.addEventListener('change', () => {
+        if (!state.selectedFacets[facetKey]) {
+          state.selectedFacets[facetKey] = [];
+        }
+
+        if (checkbox.checked) {
+          if (!state.selectedFacets[facetKey].includes(prunedFacetValue)) {
+            state.selectedFacets[facetKey].push(prunedFacetValue);
+          }
         } else {
-          state.selectedFacets[facetKey] = state.selectedFacets[facetKey].filter(v => v !== prunedFacetValue);
+          state.selectedFacets[facetKey] = state.selectedFacets[
+            facetKey
+          ].filter((value) => value !== prunedFacetValue);
         }
         handleSearchBehavior();
       });
@@ -451,19 +624,24 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
   }
 
   function setupFacetRangeInputs() {
-    const rangeInputs = document.querySelectorAll('input[type="number"][data-facet][data-range]');
+    const rangeInputs = document.querySelectorAll(
+      'input[type="number"][data-facet][data-range]',
+    );
     rangeInputs.forEach((input) => {
       const facetKey = input.getAttribute('data-facet');
       const rangeType = input.getAttribute('data-range');
 
-      if (!state.selectedRanges[facetKey]) state.selectedRanges[facetKey] = {min: '', max: ''};
+      if (!state.selectedRanges[facetKey]) {
+        state.selectedRanges[facetKey] = { min: '', max: '' };
+      }
 
-      const currentValue = state.selectedRanges[facetKey][rangeType] || input.value;
+      const currentValue =
+        state.selectedRanges[facetKey][rangeType] || input.value;
       input.value = currentValue;
       state.selectedRanges[facetKey][rangeType] = currentValue;
 
-      input.addEventListener('change', function() {
-        state.selectedRanges[facetKey][rangeType] = this.value;
+      input.addEventListener('change', () => {
+        state.selectedRanges[facetKey][rangeType] = input.value;
         handleSearchBehavior();
       });
     });
@@ -476,16 +654,22 @@ export async function initUI({ idx, resultsLookupMap, documents }) {
   setupFacetRangeInputs();
   handleSearchBehavior();
 
-  document.body.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') handleSearchBehavior();
+  searchInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSearchBehavior();
+    }
   });
 
-  if (searchSubmit) searchSubmit.addEventListener('click', function() { handleSearchBehavior(); }, false);
-  if (searchInput) searchInput.addEventListener('keyup', function() { handleSearchBehavior(); }, false);
-  if (searchLimitSelect) searchLimitSelect.addEventListener('change', function() { state.selectedSearchField = this.value; handleSearchBehavior(); }, false);
+  searchSubmit?.addEventListener('click', handleSearchBehavior);
+  searchInput.addEventListener('input', handleSearchBehavior);
+  searchLimitSelect?.addEventListener('change', () => {
+    state.selectedSearchField = searchLimitSelect.value;
+    handleSearchBehavior();
+  });
 
   return {
     getState: () => state,
-    refresh: handleSearchBehavior
+    refresh: handleSearchBehavior,
   };
 }

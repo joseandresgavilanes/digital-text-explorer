@@ -1,29 +1,21 @@
-// Utilities used by the search system
+const SEARCH_PUNCTUATION = /[.,()]/g;
+const DIACRITIC_MARKS = /[\u0300-\u036f]/g;
 
-/*
- * pruneDiacritics(string)
- * Remove diacritics and common punctuation from a string for normalized searching.
- */
-export function pruneDiacritics(string) {
-    let str = String(string);
-    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replaceAll('.', '').replaceAll(',', '').replaceAll('(', '').replaceAll(')', '');
+/** Normalizes text so accented and punctuated values remain searchable. */
+export function pruneDiacritics(value) {
+  if (value === null || value === undefined) {
+    return '';
   }
 
-/*
- * toQueryString(tokens)
- * Convert token array into a boosted Lunr query string.
- */
-export function toQueryString(tokens) {
-  return tokens.map((token) => `${token}^100 +${token}*^10 ${token}~2`).join(' ');
+  return String(value)
+    .normalize('NFD')
+    .replace(DIACRITIC_MARKS, '')
+    .replace(SEARCH_PUNCTUATION, '');
 }
 
-/*
- * truncateString(string)
- * Truncate a string to a reasonable display length.
- */
-export function truncateString(string){
-  let str = String(string || '');
-  let max = 60;
-  if (str.length < max) return str;
-  return str.substring(0, max) + "...";
+/** Builds the weighted Lunr query used for an all-fields search. */
+export function toQueryString(tokens) {
+  return tokens
+    .map((token) => `${token}^100 +${token}*^10 ${token}~2`)
+    .join(' ');
 }
