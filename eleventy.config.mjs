@@ -1,45 +1,59 @@
 import cleancss from 'clean-css';
-import { EleventyHtmlBasePlugin } from "@11ty/eleventy";
+import { EleventyHtmlBasePlugin } from '@11ty/eleventy';
 
-export default function (eleventyConfig) {
-  eleventyConfig.setIncludesDirectory("_templates");
-  eleventyConfig.setInputDirectory("src");
-  eleventyConfig.setOutputDirectory("dist");
+const LAYOUT_ALIASES = {
+  base: 'layouts/base.html',
+  document: 'layouts/document.html',
+  home: 'layouts/home.html',
+  page: 'layouts/page.html',
+};
+
+const PASSTHROUGH_COPIES = [
+  ['static', 'static'],
+  [{ 'src/_data/api': 'api' }],
+  [{ 'src/js': 'js' }],
+  [{ 'node_modules/mirador/dist': 'js/mirador' }],
+];
+
+export default function configureEleventy(eleventyConfig) {
+  eleventyConfig.setIncludesDirectory('_templates');
+  eleventyConfig.setInputDirectory('src');
+  eleventyConfig.setOutputDirectory('dist');
 
   eleventyConfig.addPlugin(EleventyHtmlBasePlugin);
 
-  eleventyConfig.addFilter('cssmin', function(code) {
-    return new cleancss({}).minify(code).styles
-  })
-  eleventyConfig.addFilter('jsonify', (data) => {
-    return JSON.stringify(data, null, "\t")
-  })  
-  eleventyConfig.addFilter('uri_encode', function(str) {
-    return encodeURIComponent(str)
-  })
-  eleventyConfig.addFilter('title_display', function(str) {
-    if (!str) return ''
-    return str.replace(/_/g, ' ').replace(/\w\S*/g, function(txt) {
-      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-    });
-  })
-  eleventyConfig.addFilter('contains', function(text, str) {
-    if (!text || !str) return false
-    return text.includes(str)
+  eleventyConfig.addFilter(
+    'cssmin',
+    (code) => new cleancss({}).minify(code).styles,
+  );
+  eleventyConfig.addFilter('jsonify', (data) =>
+    JSON.stringify(data, null, '\t'),
+  );
+  eleventyConfig.addFilter('uri_encode', (value) => encodeURIComponent(value));
+  eleventyConfig.addFilter('title_display', (value) => {
+    if (!value) return '';
+
+    return value
+      .replaceAll('_', ' ')
+      .replace(
+        /\w\S*/g,
+        (word) => word[0].toUpperCase() + word.slice(1).toLowerCase(),
+      );
   });
-  eleventyConfig.addLayoutAlias('base', 'layouts/base.html')
-  eleventyConfig.addLayoutAlias('document', 'layouts/document.html')
-  eleventyConfig.addLayoutAlias('home', 'layouts/home.html')
-  eleventyConfig.addLayoutAlias('page', 'layouts/page.html')
+  eleventyConfig.addFilter('contains', (text, value) => {
+    return Boolean(text && value && text.includes(value));
+  });
 
-  eleventyConfig.addPassthroughCopy('static', 'static')
-  eleventyConfig.addPassthroughCopy({ 'src/_data/api': 'api' })
-  eleventyConfig.addPassthroughCopy({ 'src/js': 'js' })
-  eleventyConfig.addPassthroughCopy({ 'node_modules/mirador/dist': 'js/mirador' })
+  Object.entries(LAYOUT_ALIASES).forEach(([name, path]) => {
+    eleventyConfig.addLayoutAlias(name, path);
+  });
 
-  
+  PASSTHROUGH_COPIES.forEach((args) =>
+    eleventyConfig.addPassthroughCopy(...args),
+  );
+
   return {
     pathPrefix: '/digital-text-explorer',
-    markdownTemplateEngine: 'liquid'
-  }
+    markdownTemplateEngine: 'liquid',
+  };
 }

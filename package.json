@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "npm-run-all -p dev:*",
     "build": "run-s build:*",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev:css": "npx @tailwindcss/cli -i src/css/styles.css -o dist/css/styles.css --watch --postcss",
     "dev:11ty": "eleventy --serve",
     "build:css": "npx @tailwindcss/cli -i src/css/styles.css -o dist/css/styles.css --postcss",

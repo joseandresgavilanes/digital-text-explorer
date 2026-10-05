@@ -1,6 +1,9 @@
 <script src="/js/mirador/mirador.min.js"></script>
 <div class="relative w-full">
-  <div id="map" class="w-full mb-20 z-0 bg-base-200 max-h-[80vh] h-[40rem]"></div>
+  <div
+    id="map"
+    class="bg-base-200 z-0 mb-20 h-[40rem] max-h-[80vh] w-full"
+  ></div>
 </div>
 
 <script type="text/javascript">
@@ -22,11 +25,11 @@
         }
       }
     },
-    window: { 
+    window: {
       allowClose: false,
       allowFullscreen: true,
       allowMaximize: false,
-      allowTopMenuButton: false, 
+      allowTopMenuButton: false,
       allowWindowSideBar: false,
       {% if document.document_type | contains: 'Text' %}
       defaultView: 'book',
@@ -34,7 +37,7 @@
       defaultView: 'single',
       {% endif %}
       hideWindowTitle: true,
-      panels: { 
+      panels: {
         info: false,
         attribution: false,
         canvas: false,
@@ -48,7 +51,7 @@
       showThumbnailLabels: false,
       width: {% if document.document_type | contains: 'Text' %}40{% else %}80{% endif %}
     },
-    windows: [ 
+    windows: [
       {
         manifestId: 'https://ticha-iiif.s3.us-east-1.amazonaws.com/ticha/{{ document.slug }}/manifest.json'
       }

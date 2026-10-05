@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     button.addEventListener('click', () => activateTab(button));
   });
 
-  const initialTab = [...tabButtons].find((button) => button.classList.contains('border-accent-light')) || tabButtons[0];
+  const initialTab =
+    [...tabButtons].find((button) =>
+      button.classList.contains('border-accent-light'),
+    ) || tabButtons[0];
   activateTab(initialTab);
 });

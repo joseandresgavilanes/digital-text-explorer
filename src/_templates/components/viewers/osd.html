@@ -1,24 +1,28 @@
 <!-- implement simple openseadragon viewer via cdn that supports multipage iiif manifest with thumbnail strip-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/openseadragon.min.js"></script>
-<div id="openseadragon" class="w-full mb-20 z-0 bg-base-200 max-h-[80vh] h-[40rem] bg-text-dark"></div>
+<div
+  id="openseadragon"
+  class="bg-base-200 bg-text-dark z-0 mb-20 h-[40rem] max-h-[80vh] w-full"
+></div>
 <script type="text/javascript">
-  var manifestUrl = 'https://ticha-iiif.s3.us-east-1.amazonaws.com/ticha/{{ document.slug }}/manifest.json';
+  var manifestUrl =
+    'https://ticha-iiif.s3.us-east-1.amazonaws.com/ticha/{{ document.slug }}/manifest.json';
   var tileSources = [];
-  window.document.addEventListener("DOMContentLoaded", async function() {
+  window.document.addEventListener('DOMContentLoaded', async function () {
     const response = await fetch(manifestUrl);
     const manifest = await response.json();
-    manifest.sequences[0].canvases.forEach(canvas => {
+    manifest.sequences[0].canvases.forEach((canvas) => {
       console.log(canvas.images[0].resource.service['@id'] + '/info.json');
       tileSources.push(canvas.images[0].resource.service['@id'] + '/info.json');
     });
 
     var viewer = OpenSeadragon({
-      id: "openseadragon",
-      prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/images/",
+      id: 'openseadragon',
+      prefixUrl:
+        'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.0.0/images/',
       tileSources: tileSources,
       sequenceMode: true,
-      showReferenceStrip: true
+      showReferenceStrip: true,
     });
   });
 </script>
-

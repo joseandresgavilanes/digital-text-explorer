@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&display=swap');
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Alexandria", sans-serif; 
-  --color-neutral-light: #F7EFDC;
+  --font-sans: 'Alexandria', sans-serif;
+  --color-neutral-light: #f7efdc;
   --color-neutral-dark: #e6d9bb;
-  --color-accent-light: #A52812;
-  --color-accent-dark: #7E1010;
-  --color-accent-alt-light: #D2CFDE;
-  --color-accent-alt-dark: #594B96;
-  --color-text-light: #534D54;
-  --color-text-dark: #2A222C;
+  --color-accent-light: #a52812;
+  --color-accent-dark: #7e1010;
+  --color-accent-alt-light: #d2cfde;
+  --color-accent-alt-dark: #594b96;
+  --color-text-light: #534d54;
+  --color-text-dark: #2a222c;
 }
 
 ::selection {
-  background: #D2CFDE;
+  background: #d2cfde;
 }
 
 .container {
