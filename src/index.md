@@ -1,9 +1,11 @@
 ---
 title: "Chan <span class='text-accent-light'>·</span> Bienvenidos <span class='text-accent-light'>·</span>  Welcome"
 description: >-
-  
-layout: "home"
-permalink: "/index.html"
+  Read Colonial Valley Zapotec and Spanish documents from Oaxacan archives
+  alongside the transcriptions, translations, and digital editions produced
+  by the Ticha project.
+layout: 'home'
+permalink: '/index.html'
 cards:
   - label: 'Guide to Using the Ticha Digital Text Explorer'
     eyebrow: 'Get Started'

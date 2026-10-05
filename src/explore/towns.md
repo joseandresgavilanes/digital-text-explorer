@@ -1,30 +1,37 @@
 ---
 section: Explore
-title: "Documents by Town"
+title: 'Documents by Town'
 description: >-
-  Lorem ipsum dolor si amet
-layout: "page"
-permalink: "/explore/towns.html"
+  The documents collected here were written in towns across the Valley of Oaxaca and
+  beyond. Choose a town to find it on the map, then open the documents written there.
+layout: 'page'
+permalink: '/explore/towns.html'
 ---
 
-<main class="flex-1 my-6">
+<div class="my-6">
   <div class="container mx-auto">
     <div class="flex md:flex-nowrap gap-12 xl:gap-18 flex-wrap-reverse w-full">
       <div class="basis-full md:basis-1/3">
-        {% for town in api.towns %}
-          <div class="my-2">
-            📍 <a id="{{ town.id }}-link" class="text-accent-light hover:text-accent-dark hover:underline font-bold pb-1" href="#" data-gps="{{ town.gps_coordinates | escape }}">{{ town.town_modern_official }}</a>
-            <!-- <a class="text-accent-light hover:text-accent-dark" href="/explore/documents?query={{ town.town_short | uri_encode }}">See Documents</a> -->
-            </p>
-          </div>
-        {% endfor %}
+        <h2 class="md:text-2xl text-xl font-medium title-font text-text-dark mb-4">Towns in the collection</h2>
+        <p class="mb-6 text-sm">
+          Select a town to move the map to it. Its marker opens a link to every document written there.
+          Town names are given in their modern official form; documents may name the same place differently.
+        </p>
+        <ul>
+          {% for town in api.towns %}
+            <li class="my-2">
+              <span aria-hidden="true">📍</span>
+              <a id="{{ town.id }}-link" class="text-accent-light hover:text-accent-dark hover:underline font-bold pb-1" href="#" data-gps="{{ town.gps_coordinates | escape }}" aria-label="Show {{ town.town_modern_official | escape }} on the map">{{ town.town_modern_official }}</a>
+            </li>
+          {% endfor %}
+        </ul>
       </div>
       <div class="basis-full md:basis-2/3">
         {% include "components/map.html" %}
       </div>
     </div>
   </div>
-</main>
+</div>
 
 <script>
   function setupTownClickHandlers() {

@@ -1,14 +1,23 @@
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1.0, width=device-width, viewport-fit=cover">
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="initial-scale=1.0, width=device-width, viewport-fit=cover"
+  />
   {% if document.title %}
   <title>{{ document.title | strip_html }} | {{ site.title }}</title>
+  <meta
+    name="description"
+    content="{{ document.title | escape }}. A {{ document.language }} {{ document.material_type | downcase | default: 'document' }}{% if document.archive %} held at {{ document.archive }}{% endif %}, presented with page images and metadata in the Ticha Digital Text Explorer."
+  />
   {% else %}
   <title>{{ title | strip_html }} | {{ site.title }}</title>
+  <meta
+    name="description"
+    content="{{ description | default: site.description | strip_html | strip | escape }}"
+  />
   {% endif %}
 
-
-  <link href="{{ '/css/styles.css' }}" rel="stylesheet">
-  <link rel="icon" href="{{ '/static/favicon.png'  }}" type="image/png">
+  <link href="{{ '/css/styles.css' }}" rel="stylesheet" />
+  <link rel="icon" href="{{ '/static/favicon.png'  }}" type="image/png" />
 </head>

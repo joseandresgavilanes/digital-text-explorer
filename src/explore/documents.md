@@ -1,11 +1,15 @@
 ---
 section: Explore
-title: "All Documents"
-layout: "base"
-permalink: "/explore/documents.html"
+title: 'All Documents'
+description: >-
+  Search every document in the collection, then narrow the results by language,
+  document type, year, archive, and the work that has been done on each document.
+layout: 'base'
+permalink: '/explore/documents.html'
 ---
 
 {% include "components/headers/search.html" %}
+
 <main class="flex-1">
   <section class="text-text-light body-font">
     <div class="container px-5 py-12 mx-auto">

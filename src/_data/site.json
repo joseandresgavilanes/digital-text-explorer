@@ -1,7 +1,7 @@
 {
   "title": "Ticha Digital Text Explorer",
-  "description": "",
-  "url": "",
+  "description": "Search and read Colonial Valley Zapotec and Spanish documents from Oaxacan archives, with transcriptions, translations, and digital editions from the Ticha project.",
+  "url": "https://ticha-zapotec.github.io/digital-text-explorer",
   "menu": [
     {
       "title": "Get Started",
@@ -29,7 +29,7 @@
           "url": "/explore/documents"
         },
         {
-          "title": "Digital Editons",
+          "title": "Digital Editions",
           "url": "/explore/editions"
         },
         {
