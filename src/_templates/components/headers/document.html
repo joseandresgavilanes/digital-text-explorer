@@ -1,56 +1,88 @@
 <header class="bg-neutral-dark">
-  <div class="container px-5 py-14 mx-auto">
-    <div class="flex flex-wrap justify-between w-full">
-      <div class="lg:w-1/2 w-full lg:mb-0">
+  <div class="container mx-auto px-5 py-14">
+    <div class="flex w-full flex-wrap justify-between">
+      <div class="w-full lg:mb-0 lg:w-1/2">
         {% if document.digital_edition %}
-          <h3 class="text-xs text-accent-light tracking-widest font-medium title-font mb-4 uppercase">
-            Explore /
-            <a href="/explore/editions">Digital Editions</a>
-          </h3>
+        <h3
+          class="text-accent-light title-font mb-4 text-xs font-medium tracking-widest uppercase"
+        >
+          Explore /
+          <a href="/explore/editions">Digital Editions</a>
+        </h3>
         {% else %}
-          <h3 class="text-xs text-accent-light tracking-widest font-medium title-font mb-4 uppercase">
-            Explore /
-            <a href="/explore/documents">All Documents</a>
-          </h3>
+        <h3
+          class="text-accent-light title-font mb-4 text-xs font-medium tracking-widest uppercase"
+        >
+          Explore /
+          <a href="/explore/documents">All Documents</a>
+        </h3>
         {% endif %}
-        <h1 class="sm:text-3xl text-2xl font-medium title-font mb-2 text-text-dark">
+        <h1
+          class="title-font text-text-dark mb-2 text-2xl font-medium sm:text-3xl"
+        >
           {% if document.digital_edition %}
-          <div class="h-6 w-6 inline-block bg-[url(../static/flower.png)] bg-cover bg-center px-2 py-1 rounded-tr-lg z-10"></div>
-          Digital Edition · 
-          {% endif %}
-          {{ document.title }}
+          <div
+            class="z-10 inline-block h-6 w-6 rounded-tr-lg bg-[url(../static/flower.png)] bg-cover bg-center px-2 py-1"
+          ></div>
+          Digital Edition · {% endif %} {{ document.title }}
         </h1>
-        <div class="h-1 w-20 bg-accent-light rounded mt-4"></div>
+        <div class="bg-accent-light mt-4 h-1 w-20 rounded"></div>
       </div>
-      <div class="lg:w-1/2 w-full lg:pl-6 lg:mt-0 mt-6 flex items-center justify-end">
+      <div
+        class="mt-6 flex w-full items-center justify-end lg:mt-0 lg:w-1/2 lg:pl-6"
+      >
         <!-- <div class="basis-1/6"> -->
-          {% if document.is_translation %} 
-            <a class="group" aria-label="navigate to primary document" href="{{ document.is_translation }}.html">          
-              <div class="relative h-20 w-48 rounded-tl-[2rem] rounded-br-[2rem] overflow-hidden bg-cover bg-center" style="background-image: url('../static/thumbnails/{{ document.is_translation }}.jpg');">
-                <div class="absolute top-0 right-0 bg-red-950 text-[#f7efdc] text-lg font-bold px-2 py-1 rounded-bl-lg z-10">Zapotec</div>
-                <div class="absolute top-0 left-0 w-full h-full block transition-opacity saturate-50 opacity-80 duration-350 ease-in-out group-hover:opacity-0" style="background-color: #a46136;"></div>
-              </div>
-              <div class="mt-2">
-                <h2 class="text-text-dark text-lg title-font font-bold leading-tight w-48">
-                  See the Primary Document
-                </h2>
-              </div>
-            </a>
-          {% elsif document.has_translation %}
-            <a class="group" aria-label="navigate to primary document" href="{{ document.has_translation }}.html">          
-              <div class="relative h-20 w-48 rounded-tl-[2rem] rounded-br-[2rem] overflow-hidden bg-cover bg-center" style="background-image: url('../static/thumbnails/{{ document.has_translation }}.jpg');">
-                <div class="absolute top-0 right-0 bg-accent-dark text-[#f7efdc] text-lg font-bold px-2 py-1 rounded-bl-lg z-10">Spanish</div>
-                <div class="absolute top-0 left-0 w-full h-full block transition-opacity saturate-50 opacity-80 duration-350 ease-in-out group-hover:opacity-0" style="background-color: #67781d;"></div>
-              </div>
-              <div class="mt-2">
-                <h2 class="text-text-dark text-lg title-font font-bold leading-tight w-48">
-                  See the Translation Document
-                </h2>
-              </div>
-            </a>
-          {% endif %}
+        {% if document.is_translation %}
+        <a class="group" href="{{ document.is_translation }}.html">
+          <div
+            class="relative h-20 w-48 overflow-hidden rounded-tl-[2rem] rounded-br-[2rem] bg-cover bg-center"
+            style="background-image: url('../static/thumbnails/{{ document.is_translation }}.jpg');"
+          >
+            <div
+              class="absolute top-0 right-0 z-10 rounded-bl-lg bg-red-950 px-2 py-1 text-lg font-bold text-[#f7efdc]"
+            >
+              Zapotec
+            </div>
+            <div
+              class="absolute top-0 left-0 block h-full w-full opacity-80 saturate-50 transition-opacity duration-350 ease-in-out group-hover:opacity-0"
+              style="background-color: #a46136"
+            ></div>
+          </div>
+          <div class="mt-2">
+            <h2
+              class="text-text-dark title-font w-48 text-lg leading-tight font-bold"
+            >
+              See the Primary Document
+            </h2>
+          </div>
+        </a>
+        {% elsif document.has_translation %}
+        <a class="group" href="{{ document.has_translation }}.html">
+          <div
+            class="relative h-20 w-48 overflow-hidden rounded-tl-[2rem] rounded-br-[2rem] bg-cover bg-center"
+            style="background-image: url('../static/thumbnails/{{ document.has_translation }}.jpg');"
+          >
+            <div
+              class="bg-accent-dark absolute top-0 right-0 z-10 rounded-bl-lg px-2 py-1 text-lg font-bold text-[#f7efdc]"
+            >
+              Spanish
+            </div>
+            <div
+              class="absolute top-0 left-0 block h-full w-full opacity-80 saturate-50 transition-opacity duration-350 ease-in-out group-hover:opacity-0"
+              style="background-color: #67781d"
+            ></div>
+          </div>
+          <div class="mt-2">
+            <h2
+              class="text-text-dark title-font w-48 text-lg leading-tight font-bold"
+            >
+              See the Translation Document
+            </h2>
+          </div>
+        </a>
+        {% endif %}
         <!-- </div> -->
       </div>
-    </div> 
+    </div>
   </div>
 </header>
