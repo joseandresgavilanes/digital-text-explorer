@@ -18,12 +18,12 @@ permalink: '/explore/towns.html'
           Town names are given in their modern official form; documents may name the same place differently.
         </p>
         <ul>
-          {% for town in api.towns %}
+          {%- for town in api.towns -%}
             <li class="my-2">
               <span aria-hidden="true">📍</span>
               <a id="{{ town.id }}-link" class="text-accent-light hover:text-accent-dark hover:underline font-bold pb-1" href="#" data-gps="{{ town.gps_coordinates | escape }}" aria-label="Show {{ town.town_modern_official | escape }} on the map">{{ town.town_modern_official }}</a>
             </li>
-          {% endfor %}
+          {%- endfor -%}
         </ul>
       </div>
       <div class="basis-full md:basis-2/3">
